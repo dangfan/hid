@@ -162,15 +162,9 @@ func (dev *Device) Write(b []byte) (int, error) {
 	if device == nil {
 		return 0, ErrDeviceClosed
 	}
-	// Prepend a HID report ID on Windows, other OSes don't need it
-	var report []byte
-	if runtime.GOOS == "windows" {
-		report = append([]byte{0x00}, b...)
-	} else {
-		report = b
-	}
+
 	// Execute the write operation
-	written := int(C.hid_write(device, (*C.uchar)(&report[0]), C.size_t(len(report))))
+	written := int(C.hid_write(device, (*C.uchar)(&b[0]), C.size_t(len(b))))
 	if written == -1 {
 		// If the write failed, verify if closed or other error
 		dev.lock.Lock()
@@ -215,15 +209,9 @@ func (dev *Device) SendFeatureReport(b []byte) (int, error) {
 	if device == nil {
 		return 0, ErrDeviceClosed
 	}
-	// Prepend a HID report ID on Windows, other OSes don't need it
-	var report []byte
-	if runtime.GOOS == "windows" {
-		report = append([]byte{0x00}, b...)
-	} else {
-		report = b
-	}
+
 	// Send the feature report
-	written := int(C.hid_send_feature_report(device, (*C.uchar)(&report[0]), C.size_t(len(report))))
+	written := int(C.hid_send_feature_report(device, (*C.uchar)(&b[0]), C.size_t(len(b))))
 	if written == -1 {
 		// If the write failed, verify if closed or other error
 		dev.lock.Lock()
@@ -277,9 +265,7 @@ func (dev *Device) Read(b []byte) (int, error) {
 		failure, _ := wcharTToString(message)
 		return 0, errors.New("hidapi: " + failure)
 	}
-	if runtime.GOOS == "windows" {
-		copy(b, b[1:])
-	}
+
 	return read, nil
 }
 
@@ -321,9 +307,6 @@ func (dev *Device) GetFeatureReport(b []byte) (int, error) {
 		}
 		failure, _ := wcharTToString(message)
 		return 0, errors.New("hidapi: " + failure)
-	}
-	if runtime.GOOS == "windows" {
-		copy(b, b[1:])
 	}
 
 	return read, nil
